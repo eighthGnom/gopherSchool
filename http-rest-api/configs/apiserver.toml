@@ -1,0 +1,2 @@
+bind_addr = ":8081"
+logger_level = "debug"
