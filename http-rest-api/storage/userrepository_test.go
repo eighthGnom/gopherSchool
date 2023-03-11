@@ -13,9 +13,8 @@ var userTable = "users"
 func TestUserRepository_Create(t *testing.T) {
 	s, teardown := storage.TestStorage(t, databaseURL)
 	defer teardown(userTable)
-	user, err := s.User().CreateUser(&models.User{
-		Email: "test@gmail.com",
-	})
+	testUser := models.TestUser(t)
+	user, err := s.User().CreateUser(testUser)
 	assert.NotNil(t, user)
 	assert.NoError(t, err)
 
@@ -24,18 +23,16 @@ func TestUserRepository_Create(t *testing.T) {
 func TestUserRepository_FindByEmail(t *testing.T) {
 	s, teardown := storage.TestStorage(t, databaseURL)
 	defer teardown(userTable)
-	email := "test@gmail.com"
-	u1, err := s.User().FindUserByEmail(email)
+	testUser := models.TestUser(t)
+	u1, err := s.User().FindUserByEmail(testUser.Email)
 	assert.Nil(t, u1)
 	assert.Error(t, err)
 
-	_, err = s.User().CreateUser(&models.User{
-		Email: email,
-	})
+	_, err = s.User().CreateUser(testUser)
 	if err != nil {
 		t.Fatal(err)
 	}
-	u2, err := s.User().FindUserByEmail(email)
+	u2, err := s.User().FindUserByEmail(testUser.Email)
 	assert.NoError(t, err)
 	assert.NotNil(t, u2)
 }

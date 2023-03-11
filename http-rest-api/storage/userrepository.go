@@ -13,8 +13,16 @@ type UserRepository struct {
 }
 
 func (ur *UserRepository) CreateUser(user *models.User) (*models.User, error) {
+	err := user.Validate()
+	if err != nil {
+		return nil, err
+	}
+	err = user.EnscriptPassword()
+	if err != nil {
+		return nil, err
+	}
 	query := fmt.Sprintf("insert into %s (email, enscripted_password) values ($1, $2) returning id", userTable)
-	err := ur.storage.db.QueryRow(query, user.Email, user.EnscriptedPassword).Scan(&user.ID)
+	err = ur.storage.db.QueryRow(query, user.Email, user.EnscriptedPassword).Scan(&user.ID)
 	if err != nil {
 		return nil, err
 	}
