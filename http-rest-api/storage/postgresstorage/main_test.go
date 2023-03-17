@@ -1,4 +1,4 @@
-package storage_test
+package postgresstorage_test
 
 import (
 	"os"

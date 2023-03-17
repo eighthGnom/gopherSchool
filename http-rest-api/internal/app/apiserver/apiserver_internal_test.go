@@ -5,13 +5,16 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/eighthGnom/http-rest-api/storage/teststorage"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHealthCheck(t *testing.T) {
-	server := New(NewConfig())
+func TestServer_HealthCheck(t *testing.T) {
+	store := teststorage.New()
+	srv := newServer(store)
 	recorder := httptest.NewRecorder()
-	request, _ := http.NewRequest(http.MethodGet, "/health-check", nil)
-	server.healthCheck().ServeHTTP(recorder, request)
-	assert.Equal(t, "Okay", recorder.Body.String())
+	request, _ := http.NewRequest("GET", "/healthcheck", nil)
+	srv.ServeHTTP(recorder, request)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	assert.Equal(t, "Okay", string(recorder.Body.Bytes()))
 }

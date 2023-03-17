@@ -1,38 +1,34 @@
 package apiserver
 
 import (
+	"database/sql"
 	"net/http"
 
-	"github.com/eighthGnom/http-rest-api/storage"
-	"github.com/gorilla/mux"
-	"github.com/sirupsen/logrus"
+	"github.com/eighthGnom/http-rest-api/storage/postgresstorage"
 )
 
-type APIServer struct {
-	config  *Config
-	logger  *logrus.Logger
-	router  *mux.Router
-	storage *storage.Storage
-}
-
-func New(config *Config) *APIServer {
-	return &APIServer{
-		config: config,
-		logger: logrus.New(),
-		router: mux.NewRouter(),
-	}
-}
-
-func (api *APIServer) Start() error {
-	if err := api.configStorage(); err != nil {
-		return err
-	}
-	api.logger.Info("Connected to the database successfully")
-	api.configRouter()
-	err := api.configureLogger()
+func Start(config *Config) error {
+	db, err := newBD(config.DatabaseURL)
 	if err != nil {
 		return err
 	}
-	api.logger.Infof("Starting server at port %s, with loggin level %s", api.config.BindAddr, api.config.LoggerLevel)
-	return http.ListenAndServe(api.config.BindAddr, api.router)
+	defer db.Close()
+
+	store := postgresstorage.New(db)
+	srv := newServer(store, config.LoggerLevel)
+
+	srv.logger.Infof("Starting server at port: %s", config.BindAddr)
+	return http.ListenAndServe(config.BindAddr, srv)
+}
+
+func newBD(databaseURL string) (*sql.DB, error) {
+	db, err := sql.Open("postgres", databaseURL)
+	if err != nil {
+		return nil, err
+	}
+	err = db.Ping()
+	if err != nil {
+		return nil, err
+	}
+	return db, err
 }

@@ -1,6 +1,7 @@
-package storage
+package postgresstorage
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 	"testing"
@@ -8,10 +9,15 @@ import (
 
 func TestStorage(t *testing.T, dbURL string) (*Storage, func(...string)) {
 	t.Helper()
-	config := NewConfig()
-	config.DatabaseURL = dbURL
-	storage := New(config)
-	err := storage.Open()
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = db.Ping()
+	if err != nil {
+		t.Fatal(err)
+	}
+	storage := New(db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -20,6 +26,6 @@ func TestStorage(t *testing.T, dbURL string) (*Storage, func(...string)) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		storage.Close()
+		storage.db.Close()
 	}
 }

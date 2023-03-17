@@ -23,6 +23,5 @@ func main() {
 	if err != nil {
 		log.Println("Cant decode config file, used default settings", err)
 	}
-	server := apiserver.New(config)
-	log.Fatal(server.Start())
+	log.Fatal(apiserver.Start(config))
 }
