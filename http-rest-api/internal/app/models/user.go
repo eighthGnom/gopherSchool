@@ -10,7 +10,7 @@ type User struct {
 	ID                 int    `json:"id"`
 	Email              string `json:"email"`
 	Password           string `json:"password,omitempty"`
-	EnscriptedPassword string `json:"_"`
+	EnscriptedPassword string `json:"-"`
 }
 
 func (user *User) Validate() error {

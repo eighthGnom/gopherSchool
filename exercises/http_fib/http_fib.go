@@ -1,15 +1,41 @@
 package main
 
 import (
+	"fmt"
 	"gopherSchool/exercises/fib"
-	"log"
 	"net/http"
 	"strconv"
 )
 
+type Implement struct {
+	Num int
+}
+
+func (i Implement) MyMethod() int {
+	return i.Num
+}
+
+type MyInterface interface {
+	MyMethod() int
+}
+
+type MyStruct struct {
+	i  MyInterface
+	id int
+}
+
+const (
+	a = "SDFSF"
+	B
+	b, c = iota, iota
+)
+
 func main() {
-	http.Handle("/fibonachi", HttpFib())
-	log.Fatal(http.ListenAndServe("localhost:8080", nil))
+
+}
+
+func describe(i interface{}) {
+	fmt.Printf("(%v, %T)\n", i, i)
 }
 
 func HttpFib() http.HandlerFunc {

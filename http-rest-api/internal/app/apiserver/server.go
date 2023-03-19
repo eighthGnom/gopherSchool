@@ -1,19 +1,27 @@
 package apiserver
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/eighthGnom/http-rest-api/internal/app/models"
 	"github.com/eighthGnom/http-rest-api/internal/app/storage"
+	"github.com/google/uuid"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	sessionName = "mishashttpserver"
+	sessionName        = "mishashttpserver"
+	userKey     ctxKey = iota
+	uuidKey     ctxKey = iota
 )
+
+type ctxKey int
 
 type server struct {
 	logger        *logrus.Logger
@@ -50,12 +58,20 @@ func (s *server) configureLogger(logLevel string) error {
 	}
 	s.logger.SetLevel(level)
 	return nil
+
 }
 
 func (s *server) configureRouter() {
+	s.router.Use(s.setRequestID)
+	s.router.Use(s.logRequst)
+	s.router.Use(handlers.CORS(handlers.AllowedOrigins([]string{"*"})))
 	s.router.HandleFunc("/healthcheck", s.healthCheck()).Methods("GET")
 	s.router.HandleFunc("/users", s.handleUserCreate()).Methods("POST")
 	s.router.HandleFunc("/sessions", s.handleSessionsCreate()).Methods("POST")
+
+	private := s.router.PathPrefix("/private").Subrouter()
+	private.Use(s.authUser)
+	private.HandleFunc("/whuemi", s.whuEmI())
 }
 
 func (s *server) healthCheck() http.HandlerFunc {
@@ -63,6 +79,66 @@ func (s *server) healthCheck() http.HandlerFunc {
 		writer.WriteHeader(http.StatusOK)
 		writer.Write([]byte("Okay"))
 	}
+}
+
+func (s *server) whuEmI() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		s.respond(w, r, http.StatusOK, r.Context().Value(userKey))
+	}
+}
+
+func (s *server) setRequestID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id := uuid.New().String()
+		w.Header().Set("X-Request-ID", id)
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), uuidKey, id)))
+	})
+
+}
+
+func (s *server) logRequst(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logger := s.logger.WithFields(logrus.Fields{
+			"remote addr": r.RemoteAddr,
+			"request id":  r.Context().Value(uuidKey),
+		})
+		start := time.Now()
+		logger.Infof("started %s %s", r.Method, r.RequestURI)
+		rw := &responseWriter{
+			ResponseWriter: w,
+			code:           http.StatusTeapot,
+		}
+		next.ServeHTTP(rw, r)
+		stop := time.Since(start)
+		logger.Infof("finished in %s whit code %v %s", stop, rw.code, http.StatusText(rw.code))
+
+	})
+}
+
+func (s *server) authUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		session, err := s.sessionsStore.Get(r, sessionName)
+		if err != nil {
+			s.errorMessage(w, r, http.StatusInternalServerError, err)
+			return
+		}
+		if session.IsNew {
+			s.errorMessage(w, r, http.StatusUnauthorized, storage.ErrUserUnauthorized)
+			return
+		}
+		id, ok := session.Values["user_id"]
+		if !ok {
+			s.errorMessage(w, r, http.StatusUnauthorized, storage.ErrUserUnauthorized)
+			return
+		}
+		user, err := s.store.User().FindUserByID(id.(int))
+		if err != nil {
+			s.errorMessage(w, r, http.StatusUnauthorized, storage.ErrUserUnauthorized)
+		}
+
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), userKey, user)))
+	})
+
 }
 
 func (s *server) handleUserCreate() http.HandlerFunc {
