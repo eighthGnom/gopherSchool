@@ -1,8 +1,8 @@
 package teststorage
 
 import (
-	"github.com/eighthGnom/http-rest-api/models"
-	"github.com/eighthGnom/http-rest-api/storage"
+	"github.com/eighthGnom/http-rest-api/internal/app/models"
+	"github.com/eighthGnom/http-rest-api/internal/app/storage"
 )
 
 type Storage struct {
@@ -19,7 +19,7 @@ func (s *Storage) User() storage.UserRepository {
 	}
 	s.userRepository = &UserRepository{
 		storage: s,
-		db:      make(map[string]*models.User),
+		db:      make(map[int]*models.User),
 	}
 	return s.userRepository
 }

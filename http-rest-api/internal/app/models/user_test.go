@@ -3,20 +3,20 @@ package models_test
 import (
 	"testing"
 
-	"github.com/eighthGnom/http-rest-api/models"
+	models2 "github.com/eighthGnom/http-rest-api/internal/app/models"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestUser_Validate(t *testing.T) {
 	testCases := []struct {
 		name    string
-		user    func() *models.User
+		user    func() *models2.User
 		isValid bool
 	}{
 		{
 			name: "no email",
-			user: func() *models.User {
-				user := models.TestUser(t)
+			user: func() *models2.User {
+				user := models2.TestUser(t)
 				user.Email = ""
 				return user
 			},
@@ -25,8 +25,8 @@ func TestUser_Validate(t *testing.T) {
 
 		{
 			name: "invalid email",
-			user: func() *models.User {
-				user := models.TestUser(t)
+			user: func() *models2.User {
+				user := models2.TestUser(t)
 				user.Email = "testusercom"
 				return user
 			},
@@ -35,8 +35,8 @@ func TestUser_Validate(t *testing.T) {
 
 		{
 			name: "no password",
-			user: func() *models.User {
-				user := models.TestUser(t)
+			user: func() *models2.User {
+				user := models2.TestUser(t)
 				user.Password = ""
 				return user
 			},
@@ -45,8 +45,8 @@ func TestUser_Validate(t *testing.T) {
 
 		{
 			name: "invalid password",
-			user: func() *models.User {
-				user := models.TestUser(t)
+			user: func() *models2.User {
+				user := models2.TestUser(t)
 				user.Password = "qwe"
 				return user
 			},
@@ -55,8 +55,8 @@ func TestUser_Validate(t *testing.T) {
 
 		{
 			name: "valid user",
-			user: func() *models.User {
-				user := models.TestUser(t)
+			user: func() *models2.User {
+				user := models2.TestUser(t)
 				return user
 			},
 			isValid: true,
@@ -74,7 +74,7 @@ func TestUser_Validate(t *testing.T) {
 }
 
 func TestUser_EnscriptPassword(t *testing.T) {
-	user := models.TestUser(t)
+	user := models2.TestUser(t)
 	err := user.EnscriptPassword()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, user.EnscriptedPassword)

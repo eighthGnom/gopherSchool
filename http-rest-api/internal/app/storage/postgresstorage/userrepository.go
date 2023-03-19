@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/eighthGnom/http-rest-api/models"
-	"github.com/eighthGnom/http-rest-api/storage"
+	"github.com/eighthGnom/http-rest-api/internal/app/models"
+	"github.com/eighthGnom/http-rest-api/internal/app/storage"
 )
 
 var userTable = "users"
@@ -35,6 +35,20 @@ func (ur *UserRepository) FindUserByEmail(email string) (*models.User, error) {
 	user := models.User{}
 	query := fmt.Sprintf("select id, email, enscripted_password from %s where email = $1", userTable)
 	err := ur.storage.db.QueryRow(query, email).Scan(&user.ID, &user.Email, &user.EnscriptedPassword)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, storage.ErrRecordNotFound
+		}
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (ur *UserRepository) FindUserByID(id int) (*models.User, error) {
+	user := models.User{}
+	query := fmt.Sprintf("select id, email, enscripted_password from %s where id = $1", userTable)
+	err := ur.storage.db.QueryRow(query, id).Scan(&user.ID, &user.Email, &user.EnscriptedPassword)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, storage.ErrRecordNotFound

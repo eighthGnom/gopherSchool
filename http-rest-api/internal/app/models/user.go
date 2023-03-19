@@ -9,8 +9,8 @@ import (
 type User struct {
 	ID                 int    `json:"id"`
 	Email              string `json:"email"`
-	Password           string `json:"password"`
-	EnscriptedPassword string `json:"enscripted_password"`
+	Password           string `json:"password,omitempty"`
+	EnscriptedPassword string `json:"_"`
 }
 
 func (user *User) Validate() error {
@@ -31,6 +31,9 @@ func (user *User) EnscriptPassword() error {
 	user.EnscriptedPassword = hashedPassword
 	return nil
 }
+func (user *User) CompareEnscriptedPassword(password string) bool {
+	return bcrypt.CompareHashAndPassword([]byte(user.EnscriptedPassword), []byte(password)) == nil
+}
 
 func enscriptString(str string) (string, error) {
 	hashedPasswordByte, err := bcrypt.GenerateFromPassword([]byte(str), bcrypt.DefaultCost)
@@ -38,4 +41,8 @@ func enscriptString(str string) (string, error) {
 		return "", err
 	}
 	return string(hashedPasswordByte), nil
+}
+
+func (user *User) Sanitize() {
+	user.Password = ""
 }

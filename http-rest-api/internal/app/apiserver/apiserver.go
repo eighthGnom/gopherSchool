@@ -4,7 +4,8 @@ import (
 	"database/sql"
 	"net/http"
 
-	"github.com/eighthGnom/http-rest-api/storage/postgresstorage"
+	"github.com/eighthGnom/http-rest-api/internal/app/storage/postgresstorage"
+	"github.com/gorilla/sessions"
 )
 
 func Start(config *Config) error {
@@ -15,7 +16,8 @@ func Start(config *Config) error {
 	defer db.Close()
 
 	store := postgresstorage.New(db)
-	srv := newServer(store, config.LoggerLevel)
+	sessionsStore := sessions.NewCookieStore([]byte(config.SessionKey))
+	srv := newServer(store, sessionsStore, config.LoggerLevel)
 
 	srv.logger.Infof("Starting server at port: %s", config.BindAddr)
 	return http.ListenAndServe(config.BindAddr, srv)

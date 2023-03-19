@@ -3,9 +3,9 @@ package postgresstorage_test
 import (
 	"testing"
 
-	"github.com/eighthGnom/http-rest-api/models"
-	"github.com/eighthGnom/http-rest-api/storage"
-	"github.com/eighthGnom/http-rest-api/storage/postgresstorage"
+	"github.com/eighthGnom/http-rest-api/internal/app/models"
+	"github.com/eighthGnom/http-rest-api/internal/app/storage"
+	"github.com/eighthGnom/http-rest-api/internal/app/storage/postgresstorage"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -37,4 +37,22 @@ func TestUserRepository_FindByEmail(t *testing.T) {
 	user, err = s.User().FindUserByEmail(testUser.Email)
 	assert.NoError(t, err)
 	assert.NotNil(t, user)
+}
+
+func TestUserRepository_FindUserByID(t *testing.T) {
+	store, teardown := postgresstorage.TestStorage(t, databaseURL)
+	defer teardown(userTable)
+	testUser := models.TestUser(t)
+	err := store.User().Create(testUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	user, err := store.User().FindUserByID(999)
+	assert.Empty(t, user)
+	assert.EqualError(t, err, storage.ErrRecordNotFound.Error())
+
+	user, err = store.User().FindUserByID(testUser.ID)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, user)
 }

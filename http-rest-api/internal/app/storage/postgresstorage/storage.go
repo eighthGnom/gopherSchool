@@ -3,7 +3,7 @@ package postgresstorage
 import (
 	"database/sql"
 
-	"github.com/eighthGnom/http-rest-api/storage"
+	"github.com/eighthGnom/http-rest-api/internal/app/storage"
 	_ "github.com/lib/pq"
 )
 
