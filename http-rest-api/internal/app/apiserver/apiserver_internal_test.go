@@ -3,15 +3,21 @@ package apiserver
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/eighthGnom/http-rest-api/internal/app/models"
 	"github.com/eighthGnom/http-rest-api/internal/app/storage/teststorage"
+	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	"github.com/stretchr/testify/assert"
 )
+
+var b = 12
+var c interface{} = &b
+var a *interface{} = &c
 
 func TestServer_HealthCheck(t *testing.T) {
 	store := teststorage.New()
@@ -118,6 +124,56 @@ func TestServer_HandleSessionsCreate(t *testing.T) {
 			recorder := httptest.NewRecorder()
 			request, _ := http.NewRequest("POST", "/sessions", buffer)
 			srv.handleSessionsCreate().ServeHTTP(recorder, request)
+			assert.Equal(t, tc.expectedCode, recorder.Code)
+		})
+	}
+}
+
+func TestServer_AuthUser(t *testing.T) {
+	secretKey := []byte("secret")
+	store := teststorage.New()
+	sessionStore := sessions.NewCookieStore(secretKey)
+	srv := newServer(store, sessionStore)
+
+	testUser := models.TestUser(t)
+	err := srv.store.User().Create(testUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testCases := []struct {
+		name         string
+		cookieValue  map[interface{}]interface{}
+		expectedCode int
+	}{
+		{
+			name: "valid",
+			cookieValue: map[interface{}]interface{}{
+				"user_id": testUser.ID,
+			},
+			expectedCode: http.StatusOK,
+		},
+		{
+			name:         "invalid",
+			cookieValue:  nil,
+			expectedCode: http.StatusUnauthorized,
+		},
+	}
+	sc := securecookie.New(secretKey, nil)
+	handler := http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.WriteHeader(http.StatusOK)
+	})
+	mv := srv.authUser(handler)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			request, _ := http.NewRequest("GET", "/", nil)
+			enscriptedCookie, err := sc.Encode(sessionName, tc.cookieValue)
+			if err != nil {
+				t.Fatal()
+			}
+			request.Header.Set("Cookie", fmt.Sprintf("%s=%s", sessionName, enscriptedCookie))
+			mv.ServeHTTP(recorder, request)
 			assert.Equal(t, tc.expectedCode, recorder.Code)
 		})
 	}
