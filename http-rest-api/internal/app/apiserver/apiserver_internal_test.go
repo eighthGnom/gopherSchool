@@ -15,6 +15,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var b = 12
+var c interface{} = &b
+var a *interface{} = &c
+
 func TestServer_HealthCheck(t *testing.T) {
 	store := teststorage.New()
 	sessionsStore := sessions.NewCookieStore([]byte("session"))
